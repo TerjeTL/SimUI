@@ -1,28 +1,32 @@
 <script lang="ts">
-  import type { SimData } from './simdata.ts'
-  import { Canvas, T } from '@threlte/core'
-  import { OrbitControls } from '@threlte/extras'
+	import { Canvas } from '@threlte/core';
+	import Scene from '$lib/Scene.svelte';
+	import Timeline from '$lib/Timeline.svelte';
+	import { FrameStore, fromSimData, isComplete } from '$lib/frame.svelte';
+	import type { SimData } from './simdata.ts';
 
-  let data = $state<Partial<SimData>>({})
+	const store = new FrameStore();
+	let pending = $state<Partial<SimData>>({});
 
-  window.onData = (key, value) => {
-    data[key] = value
-  }
+	window.onData = (key, value) => {
+		// Reset accumulator when a new frame starts (index field arrives first)
+		if (key === 'index') pending = {};
+
+		pending[key] = value;
+
+		if (isComplete(pending)) {
+			store.add(fromSimData(pending));
+			pending = {};
+		}
+	};
 </script>
 
-<Canvas>
-  <T.PerspectiveCamera makeDefault position={[0, 2, 5]}>
-    <OrbitControls enableDamping />
-  </T.PerspectiveCamera>
-  <T.DirectionalLight position={[5, 5, 5]} />
-  <T.AmbientLight intensity={0.4} />
-  <T.Mesh position={data.boxPosition ?? [0, 0, 0]}>
-    <T.BoxGeometry />
-    <T.MeshStandardMaterial color="hotpink" />
-  </T.Mesh>
-</Canvas>
+<Canvas><Scene frame={store.currentFrame} /></Canvas>
 
-<style>
-  :global(body) { margin: 0; }
-  :global(canvas) { display: block; width: 100vw; height: 100vh; }
-</style>
+<div class="absolute bottom-4 left-8 right-8">
+	<Timeline
+		bind:frame={store.current}
+		total={store.frames.length - 1}
+		time={store.currentFrame?.time}
+	/>
+</div>
