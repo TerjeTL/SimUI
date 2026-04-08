@@ -50,7 +50,7 @@ def _webview_worker(
                     f'window.onData({json.dumps(key)}, {json.dumps(value, cls=_Encoder)})'
                 )
 
-    webview.start(func=_pump)
+    webview.start(func=_pump, debug=False)
 
 
 class SimUI:

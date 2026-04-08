@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate-types": "python scripts/generate.py",
+    "prebuild": "python scripts/generate.py",
     "build": "vite build",
+    "prewatch": "python scripts/generate.py",
+    "watch": "vite build --watch",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
   },
