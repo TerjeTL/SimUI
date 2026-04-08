@@ -16,6 +16,14 @@ export interface HullFrame {
   // entity transform
   position:     Float32Array   // 3
   rotation:     Float32Array   // 9, row-major 3x3
+
+  // full hull wireframe (world-space) — optional
+  hullVertices?: Float32Array  // Nx3 flat
+  hullIndices?:  Uint32Array   // Mx3 flat
+
+  // water surface wireframe (world-space) — optional
+  waterVertices?: Float32Array // Nx3 flat
+  waterIndices?:  Uint32Array  // Mx3 flat
 }
 
 /** Convert a complete SimData (JSON transport, number[]) to a HullFrame with typed arrays. */
@@ -30,6 +38,10 @@ export function fromSimData(d: SimData): HullFrame {
     facePressure: new Float32Array(d.facePressure),
     position:     new Float32Array(d.position),
     rotation:     new Float32Array(d.rotation),
+    hullVertices:  d.hullVertices  ? new Float32Array(d.hullVertices)  : undefined,
+    hullIndices:   d.hullIndices   ? new Uint32Array(d.hullIndices)    : undefined,
+    waterVertices: d.waterVertices ? new Float32Array(d.waterVertices) : undefined,
+    waterIndices:  d.waterIndices  ? new Uint32Array(d.waterIndices)   : undefined,
   }
 }
 

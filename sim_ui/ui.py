@@ -34,13 +34,16 @@ def _webview_worker(
     height: int,
     svelte_uri: str,
 ) -> None:
+    import threading
     import webview
 
+    stop = threading.Event()
     win = webview.create_window(title, svelte_uri, width=width, height=height)
     win.events.loaded += ready.set
+    win.events.closed += stop.set
 
     def _pump() -> None:
-        while True:
+        while not stop.is_set():
             try:
                 item = q.get(timeout=0.05)
             except queue.Empty:
@@ -69,7 +72,7 @@ class SimUI:
         if not self._proc.is_alive():
             return
         try:
-            self._q.put(dataclasses.asdict(frame))
+            self._q.put({k: v for k, v in dataclasses.asdict(frame).items() if v is not None})
         except Exception:
             pass
 

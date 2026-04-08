@@ -13,6 +13,15 @@ class Frame:
     index: int = 0
     time: Optional[float] = None
 
+    # full hull mesh (world-space, wireframe overlay) — optional
+    # sent before required fields so they're in pending when isComplete fires
+    hullVertices: Optional[np.ndarray] = None   # Nx3 float32
+    hullIndices:  Optional[np.ndarray] = None   # Mx3 uint32
+
+    # water surface mesh (world-space, blue wireframe) — optional
+    waterVertices: Optional[np.ndarray] = None  # Nx3 float32
+    waterIndices:  Optional[np.ndarray] = None  # Mx3 uint32
+
     # submerged mesh
     vertices:     np.ndarray = _zeros((0, 3))
     indices:      np.ndarray = _zeros((0, 3), dtype=np.uint32)

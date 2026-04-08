@@ -9,9 +9,13 @@
   import AxisGizmo     from '$lib/AxisGizmo.svelte'
   let {
     frame,
+    pmin,
+    pmax,
     showForces = true,
   }: {
     frame:       HullFrame | null
+    pmin?:       number
+    pmax?:       number
     showForces?: boolean
   } = $props()
 
@@ -55,6 +59,9 @@
     <SubmergedMesh
       vertices={frame.vertices}
       indices={frame.indices}
+      facePressure={frame.facePressure}
+      {pmin}
+      {pmax}
     />
 
     <AxisGizmo

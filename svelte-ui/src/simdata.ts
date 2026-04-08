@@ -9,4 +9,8 @@ export interface SimData {
   facePressure: number[]
   position: number[]
   rotation: number[]
+  hullVertices: number[] | undefined
+  hullIndices: number[] | undefined
+  waterVertices: number[] | undefined
+  waterIndices: number[] | undefined
 }
