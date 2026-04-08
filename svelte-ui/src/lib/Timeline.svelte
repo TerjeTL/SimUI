@@ -7,19 +7,25 @@
     time?: number
   } = $props()
 
-  const MAX_TICKS = 101;
-  function showTick(index: number, total: number): boolean {
-    if (total <= MAX_TICKS) return true;
-    const stride = Math.ceil((total - 1) / (MAX_TICKS - 1));
-    return index % stride === 0 || index === total - 1;
-  }
+  const MAX_TICKS = 100;
+
+  // step as array makes bits-ui generate tickItems at exactly these positions
+  const step = $derived(
+    total <= MAX_TICKS
+      ? Array.from({ length: total }, (_, i) => i)
+      : Array.from({ length: MAX_TICKS }, (_, i) =>
+          Math.round(i * (total - 1) / (MAX_TICKS - 1))
+        )
+  );
 </script>
 
 <div class="fixed inset-x-6 bottom-6 rounded-3xl border border-border bg-card p-8 shadow-lg">
   <Slider.Root
     type="single"
-    step={total}
+    min={0}
+    max={total - 1}
     bind:value={frame}
+    {step}
     class="relative flex w-full touch-none select-none items-center"
   >
     {#snippet children({ tickItems, thumbItems })}
@@ -31,26 +37,26 @@
             {index}
             class="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-border data-[bounded]:bg-primary"
           />
-          {#if showTick(index, tickItems.length)}
-            <Slider.TickLabel
-              {index}
-              position="bottom"
-              class="mt-2 text-[10px] tabular-nums text-muted-foreground"
-            >
-              {tickValue}
-            </Slider.TickLabel>
-          {/if}
+          <Slider.TickLabel
+            {index}
+            position="bottom"
+            class="mt-2 text-[10px] tabular-nums text-muted-foreground"
+          >
+            {tickValue}
+          </Slider.TickLabel>
         {/each}
       </span>
 
-      {#each thumbItems as { value: thumbValue, index } (index)}
-        <Slider.ThumbLabel
-          {index}
-          position="top"
-          class="mb-2 text-xs font-semibold tabular-nums text-foreground"
-        >
-          {thumbValue.toFixed(2)}s
-        </Slider.ThumbLabel>
+      {#each thumbItems as { index } (index)}
+        {#if time !== undefined}
+          <Slider.ThumbLabel
+            {index}
+            position="top"
+            class="mb-2 text-xs font-semibold tabular-nums text-foreground"
+          >
+            {time.toFixed(2)}s
+          </Slider.ThumbLabel>
+        {/if}
         <Slider.Thumb
           {index}
           class="block size-4 rounded-full border-2 border-primary bg-background shadow"
