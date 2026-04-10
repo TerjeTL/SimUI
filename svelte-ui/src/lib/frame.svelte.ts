@@ -24,6 +24,10 @@ export interface HullFrame {
   // water surface wireframe (world-space) — optional
   waterVertices?: Float32Array // Nx3 flat
   waterIndices?:  Uint32Array  // Mx3 flat
+
+  // above-water (aero) mesh — optional
+  aeroVertices?: Float32Array  // Nx3 flat
+  aeroIndices?:  Uint32Array   // Mx3 flat
 }
 
 /** Convert a complete SimData (JSON transport, number[]) to a HullFrame with typed arrays. */
@@ -42,6 +46,8 @@ export function fromSimData(d: SimData): HullFrame {
     hullIndices:   d.hullIndices   ? new Uint32Array(d.hullIndices)    : undefined,
     waterVertices: d.waterVertices ? new Float32Array(d.waterVertices) : undefined,
     waterIndices:  d.waterIndices  ? new Uint32Array(d.waterIndices)   : undefined,
+    aeroVertices:  d.aeroVertices  ? new Float32Array(d.aeroVertices)  : undefined,
+    aeroIndices:   d.aeroIndices   ? new Uint32Array(d.aeroIndices)    : undefined,
   }
 }
 

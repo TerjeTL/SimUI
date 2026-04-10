@@ -5,6 +5,7 @@
   import type { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
   import type { HullFrame } from './frame.svelte.ts'
   import SubmergedMesh from '$lib/SubmergedMesh.svelte'
+  import AeroMesh      from '$lib/AeroMesh.svelte'
   import HydroForces   from '$lib/HydroForces.svelte'
   import AxisGizmo     from '$lib/AxisGizmo.svelte'
   let {
@@ -63,6 +64,13 @@
       {pmin}
       {pmax}
     />
+
+    {#if frame.aeroVertices && frame.aeroIndices}
+      <AeroMesh
+        vertices={frame.aeroVertices}
+        indices={frame.aeroIndices}
+      />
+    {/if}
 
     <AxisGizmo
       position={Array.from(frame.position) as [number, number, number]}

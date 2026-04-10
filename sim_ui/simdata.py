@@ -22,6 +22,10 @@ class Frame:
     waterVertices: Optional[np.ndarray] = None  # Nx3 float32
     waterIndices:  Optional[np.ndarray] = None  # Mx3 uint32
 
+    # above-water (aero) mesh — optional
+    aeroVertices: Optional[np.ndarray] = None   # Nx3 float32
+    aeroIndices:  Optional[np.ndarray] = None   # Mx3 uint32
+
     # submerged mesh
     vertices:     np.ndarray = _zeros((0, 3))
     indices:      np.ndarray = _zeros((0, 3), dtype=np.uint32)
