@@ -1,29 +1,14 @@
-import dataclasses
 import json
 import multiprocessing
 import multiprocessing.queues
 import queue
 from pathlib import Path
-from typing import Any
-
-_ctx = multiprocessing.get_context('fork')
-
-try:
-    import numpy as np
-    _has_numpy = True
-except ImportError:
-    _has_numpy = False
 
 from sim_ui.simdata import Frame
 
+_ctx = multiprocessing.get_context('fork')
+
 _svelte_path = Path(__file__).parent / 'dist' / 'index.html'
-
-
-class _Encoder(json.JSONEncoder):
-    def default(self, obj: Any) -> Any:
-        if _has_numpy and isinstance(obj, np.ndarray):
-            return obj.flatten().tolist()
-        return super().default(obj)
 
 
 def _webview_worker(
@@ -45,13 +30,10 @@ def _webview_worker(
     def _pump() -> None:
         while not stop.is_set():
             try:
-                item = q.get(timeout=0.05)
+                wire = q.get(timeout=0.05)
             except queue.Empty:
                 continue
-            for key, value in item.items():
-                win.evaluate_js(
-                    f'window.onData({json.dumps(key)}, {json.dumps(value, cls=_Encoder)})'
-                )
+            win.evaluate_js(f'window.onFrame({json.dumps(wire)})')
 
     webview.start(func=_pump, debug=False)
 
@@ -66,13 +48,13 @@ class SimUI:
             daemon=True,
         )
         self._proc.start()
-        ready.wait()   # block until the page has loaded
+        ready.wait()
 
     def send(self, frame: Frame) -> None:
         if not self._proc.is_alive():
             return
         try:
-            self._q.put({k: v for k, v in dataclasses.asdict(frame).items() if v is not None})
+            self._q.put(frame.to_wire())
         except Exception:
             pass
 

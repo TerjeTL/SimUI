@@ -3,13 +3,13 @@
   import { onMount } from 'svelte'
   import uPlot from 'uplot'
   import 'uplot/dist/uPlot.min.css'
-  import type { HullFrame } from './frame.svelte.ts'
+  import type { Frame } from './frame.svelte.ts'
 
   let {
     frames,
     currentIndex,
   }: {
-    frames:       HullFrame[]
+    frames:       Frame[]
     currentIndex: number
   } = $props()
 
@@ -17,7 +17,7 @@
 
   let u: uPlot | null = null
 
-  function buildData(frames: HullFrame[]): uPlot.AlignedData {
+  function buildData(frames: Frame[]): uPlot.AlignedData {
     const xs: number[] = []
     const ys: number[] = []
     for (const f of frames) {

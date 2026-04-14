@@ -1,6 +1,6 @@
 <!-- src/lib/ColorBar.svelte -->
 <script lang="ts">
-  import { lutCSS } from './colormap'
+  import { lutCSS } from './colormap.ts'
 
   let { pmin, pmax }: { pmin: number; pmax: number } = $props()
 

@@ -2,25 +2,41 @@
 	import { Canvas } from '@threlte/core';
 	import Scene from '$lib/Scene.svelte';
 	import Timeline from '$lib/Timeline.svelte';
-	import ForceChart from '$lib/ForceChart.svelte';
 	import ColorBar from '$lib/ColorBar.svelte';
-	import { FrameStore, fromSimData, isComplete } from '$lib/frame.svelte';
-	import type { SimData } from './simdata.ts';
+	import { FrameStore } from '$lib/frame.svelte';
+	import { fromEncoded, type EncodedFrame } from './frame.ts';
 
 	const store = new FrameStore();
-	let pending = $state<Partial<SimData>>({});
 
-	window.onData = (key, value) => {
-		// Reset accumulator when a new frame starts (index field arrives first)
-		if (key === 'index') pending = {};
+	let playing       = $state(false);
+	let playbackSpeed = $state(4);
+	let raf = -1;
 
-		pending[key] = value;
+	function play() {
+		if (playing) return;
+		playing = true;
+		const startIdx     = store.current;
+		const startSimTime = store.frames[startIdx]?.time ?? 0;
+		const wallStart    = performance.now();
 
-		if (isComplete(pending)) {
-			store.add(fromSimData(pending));
-			pending = {};
+		function tick() {
+			const target = startSimTime + (performance.now() - wallStart) / 1000 * playbackSpeed;
+			let idx = store.current;
+			while (idx < store.frames.length - 1 && (store.frames[idx + 1].time ?? 0) <= target)
+				idx++;
+			store.current = idx;
+			if (idx >= store.frames.length - 1) { playing = false; return; }
+			raf = requestAnimationFrame(tick);
 		}
-	};
+		raf = requestAnimationFrame(tick);
+	}
+
+	function pause() {
+		playing = false;
+		cancelAnimationFrame(raf);
+	}
+
+	window.onFrame = (d: EncodedFrame) => store.add(fromEncoded(d));
 
 	// Global pressure range across all frames, padded 10% beyond true min/max
 	let pressureRange = $derived.by(() => {
@@ -41,12 +57,6 @@
 
 <Canvas><Scene frame={store.currentFrame} {pmin} {pmax} /></Canvas>
 
-{#if store.frames.length > 1}
-  <!-- <div class="fixed top-6 right-6 rounded-3xl border border-border bg-card/70 backdrop-blur-sm shadow-lg p-4">
-    <ForceChart frames={store.frames} currentIndex={store.current} />
-  </div> -->
-{/if}
-
 {#if store.currentFrame}
   <ColorBar {pmin} {pmax} />
 {/if}
@@ -56,5 +66,7 @@
 		bind:frame={store.current}
 		total={store.frames.length - 1}
 		time={store.currentFrame?.time}
+		{playing}
+		ontoggle={() => playing ? pause() : play()}
 	/>
 </div>

@@ -1,43 +1,128 @@
 #!/usr/bin/env python
-"""Generate simdata.ts from sim_ui/simdata.py — called by npm prebuild."""
+"""Generate src/frame.ts from sim_ui/simdata.py — called by npm prebuild."""
 import importlib.util
 import typing
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any, get_args, get_origin, get_type_hints
 
-_root = Path(__file__).parent.parent.parent
-TS_OUT = Path(__file__).parent.parent / 'src' / 'simdata.ts'
+_root   = Path(__file__).parent.parent.parent
+TS_OUT  = Path(__file__).parent.parent / 'src' / 'frame.ts'
 
 _spec = importlib.util.spec_from_file_location('simdata', _root / 'sim_ui' / 'simdata.py')
-_mod = importlib.util.module_from_spec(_spec)  # type: ignore[arg-type]
-_spec.loader.exec_module(_mod)  # type: ignore[union-attr]
+_mod  = importlib.util.module_from_spec(_spec)   # type: ignore[arg-type]
+_spec.loader.exec_module(_mod)                    # type: ignore[union-attr]
 Frame = _mod.Frame
 
 
-def to_ts(tp: Any) -> str:
-    if tp is str:           return 'string'
-    if tp is bool:          return 'boolean'
-    if tp in (int, float):  return 'number'
-    if getattr(tp, '__name__', None) == 'ndarray': return 'number[]'
-    origin = typing.get_origin(tp)
-    args   = typing.get_args(tp)
-    if origin is tuple:
-        return '[' + ', '.join(to_ts(a) for a in args) + ']'
-    if origin is list:
-        return f'{to_ts(args[0])}[]'
-    if origin is typing.Union:
-        non_none = [a for a in args if a is not type(None)]
-        if len(non_none) == 1:
-            return f'{to_ts(non_none[0])} | undefined'
-    if origin is typing.Literal:
-        return ' | '.join(f"'{a}'" for a in args)
-    return 'unknown'
+# ── type introspection helpers ────────────────────────────────────────────────
+
+def _unwrap_optional(tp: Any) -> tuple[Any, bool]:
+    """Return (inner, is_optional). Strips Union[X, None]."""
+    if get_origin(tp) is typing.Union:
+        args = [a for a in get_args(tp) if a is not type(None)]
+        if len(args) == 1:
+            return args[0], True
+    return tp, False
+
+
+def _dtype_tag(tp: Any) -> str | None:
+    """Return 'f32' / 'u32' if tp is Annotated[ndarray, tag], else None."""
+    if get_origin(tp) is Annotated:
+        meta = get_args(tp)[1:]
+        if meta and meta[0] in ('f32', 'u32'):
+            return meta[0]
+    return None
+
+
+def _field_kinds(hints: dict[str, Any]) -> list[tuple[str, str | None, bool]]:
+    """Return list of (name, dtype_tag_or_None, is_optional) for each field."""
+    result = []
+    for name, tp in hints.items():
+        inner, optional = _unwrap_optional(tp)
+        tag = _dtype_tag(inner)
+        result.append((name, tag, optional))
+    return result
+
+
+# ── TS emission ───────────────────────────────────────────────────────────────
+
+def _encoded_ts(tag: str | None, optional: bool) -> str:
+    base = 'string' if tag else 'number'
+    return f'{base} | undefined' if optional else base
+
+
+def _frame_ts(tag: str | None, optional: bool) -> str:
+    if tag == 'f32':
+        base = 'Float32Array'
+    elif tag == 'u32':
+        base = 'Uint32Array'
+    else:
+        base = 'number'
+    return f'{base} | undefined' if optional else base
+
+
+def _encoded_interface(fields: list[tuple[str, str | None, bool]]) -> str:
+    lines = []
+    for name, tag, optional in fields:
+        q = '?' if optional else ''
+        ts = 'string' if tag else 'number'
+        lines.append(f'  {name}{q}: {ts}')
+    return 'export interface EncodedFrame {\n' + '\n'.join(lines) + '\n}'
+
+
+def _frame_interface(fields: list[tuple[str, str | None, bool]]) -> str:
+    lines = []
+    for name, tag, optional in fields:
+        q = '?' if optional else ''
+        if tag == 'f32':
+            ts = 'Float32Array'
+        elif tag == 'u32':
+            ts = 'Uint32Array'
+        else:
+            ts = 'number'
+        lines.append(f'  {name}{q}: {ts}')
+    return 'export interface Frame {\n' + '\n'.join(lines) + '\n}'
+
+
+def _from_encoded(fields: list[tuple[str, str | None, bool]]) -> str:
+    lines = []
+    for name, tag, optional in fields:
+        if tag == 'f32':
+            decoder = 'decodeF32'
+        elif tag == 'u32':
+            decoder = 'decodeU32'
+        else:
+            lines.append(f'  {name}: d.{name},')
+            continue
+        if optional:
+            lines.append(f'  {name}: d.{name} !== undefined ? {decoder}(d.{name}) : undefined,')
+        else:
+            lines.append(f'  {name}: {decoder}(d.{name}),')
+    return (
+        'export function fromEncoded(d: EncodedFrame): Frame {\n'
+        '  return {\n'
+        + '\n'.join(f'  {l}' for l in lines)
+        + '\n  }\n}'
+    )
 
 
 def generate() -> str:
-    hints = typing.get_type_hints(Frame)
-    fields = '\n'.join(f'  {name}: {to_ts(tp)}' for name, tp in hints.items())
-    return f'// auto-generated from Frame — do not edit\nexport interface SimData {{\n{fields}\n}}\n'
+    hints  = get_type_hints(Frame, include_extras=True)
+    fields = _field_kinds(hints)
+    return '\n\n'.join([
+        '// auto-generated by scripts/generate.py — do not edit',
+        _encoded_interface(fields),
+        _frame_interface(fields),
+        '''\
+function decodeF32(b64: string): Float32Array {
+  return new Float32Array(Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer)
+}
+
+function decodeU32(b64: string): Uint32Array {
+  return new Uint32Array(Uint8Array.from(atob(b64), c => c.charCodeAt(0)).buffer)
+}''',
+        _from_encoded(fields),
+    ]) + '\n'
 
 
 if __name__ == '__main__':

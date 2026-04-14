@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Slider } from "bits-ui";
 
-  let { frame = $bindable(), total, time }: {
+  let { frame = $bindable(), total, time, playing = false, ontoggle }: {
     frame: number
     total: number
     time?: number
+    playing?: boolean
+    ontoggle?: () => void
   } = $props()
 
   const MAX_TICKS = 25;
@@ -37,13 +39,34 @@
 </script>
 
 <div class="fixed inset-x-6 bottom-6 rounded-3xl border border-border bg-card/70 backdrop-blur-sm p-8 shadow-lg pointer-events-none">
+  <div class="flex items-center gap-6">
+
+  <button
+    onclick={ontoggle}
+    class="pointer-events-auto shrink-0 text-foreground/70 hover:text-foreground transition-colors"
+    aria-label={playing ? 'Pause' : 'Play'}
+  >
+    {#if playing}
+      <!-- pause -->
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <rect x="4"  y="3" width="4" height="14" rx="1"/>
+        <rect x="12" y="3" width="4" height="14" rx="1"/>
+      </svg>
+    {:else}
+      <!-- play -->
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <polygon points="4,2 18,10 4,18"/>
+      </svg>
+    {/if}
+  </button>
+
   <Slider.Root
     type="single"
     min={0}
     max={total - 1}
     step={1}
     bind:value={frame}
-    class="relative flex w-full touch-none select-none items-center pointer-events-auto"
+    class="relative flex grow touch-none select-none items-center pointer-events-auto"
   >
     {#snippet children({ tickItems, thumbItems })}
       <span class="relative h-1.5 grow rounded-full bg-muted">
@@ -81,4 +104,6 @@
       {/each}
     {/snippet}
   </Slider.Root>
+
+  </div>
 </div>

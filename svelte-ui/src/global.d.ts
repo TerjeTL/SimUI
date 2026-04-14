@@ -1,6 +1,7 @@
-interface Window {
-  onData: <K extends keyof import('./simdata').SimData>(
-    key: K,
-    value: import('./simdata').SimData[K]
-  ) => void
+import type { EncodedFrame } from './frame.ts'
+
+declare global {
+  interface Window {
+    onFrame: (frame: EncodedFrame) => void
+  }
 }

@@ -3,18 +3,22 @@
   import { T } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
   import type { OrbitControls as ThreeOrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-  import type { HullFrame } from './frame.svelte.ts'
+  import type { Frame } from './frame.svelte.ts'
   import SubmergedMesh from '$lib/SubmergedMesh.svelte'
   import AeroMesh      from '$lib/AeroMesh.svelte'
+  import WireframeMesh from '$lib/WireframeMesh.svelte'
   import HydroForces   from '$lib/HydroForces.svelte'
   import AxisGizmo     from '$lib/AxisGizmo.svelte'
+  import RigLine       from '$lib/RigLine.svelte'
+  import Sail          from '$lib/Sail.svelte'
+  import SailForces    from '$lib/SailForces.svelte'
   let {
     frame,
     pmin,
     pmax,
     showForces = true,
   }: {
-    frame:       HullFrame | null
+    frame:       Frame | null
     pmin?:       number
     pmax?:       number
     showForces?: boolean
@@ -72,6 +76,15 @@
       />
     {/if}
 
+    {#if frame.waterVertices && frame.waterIndices}
+      <WireframeMesh
+        vertices={frame.waterVertices}
+        indices={frame.waterIndices}
+        color={0x1a8cff}
+        opacity={0.35}
+      />
+    {/if}
+
     <AxisGizmo
       position={Array.from(frame.position) as [number, number, number]}
       rotation={Array.from(frame.rotation)}
@@ -83,6 +96,54 @@
         faceCops={frame.faceCops}
         faceNormals={frame.faceNormals}
         facePressure={frame.facePressure}
+      />
+    {/if}
+
+    {#if frame.mastPoints}
+      <RigLine
+        a={[frame.mastPoints[0], frame.mastPoints[1], frame.mastPoints[2]]}
+        b={[frame.mastPoints[3], frame.mastPoints[4], frame.mastPoints[5]]}
+        color={0xcccccc}
+      />
+    {/if}
+
+    {#if frame.boomPoints}
+      <RigLine
+        a={[frame.boomPoints[0], frame.boomPoints[1], frame.boomPoints[2]]}
+        b={[frame.boomPoints[3], frame.boomPoints[4], frame.boomPoints[5]]}
+        color={0xaaaaaa}
+      />
+    {/if}
+
+    {#if frame.sailStripVertices && frame.sailStripIndices}
+      <Sail
+        vertices={frame.sailStripVertices}
+        indices={frame.sailStripIndices}
+      />
+    {/if}
+
+    {#if frame.sailForceOrigins && frame.sailForceVectors}
+      <SailForces
+        origins={frame.sailForceOrigins}
+        vectors={frame.sailForceVectors}
+      />
+    {/if}
+
+    {#if frame.foilStripVertices && frame.foilStripIndices}
+      <Sail
+        vertices={frame.foilStripVertices}
+        indices={frame.foilStripIndices}
+        color={0x3a7bd5}
+        opacity={0.85}
+      />
+    {/if}
+
+    {#if frame.foilForceOrigins && frame.foilForceVectors}
+      <SailForces
+        origins={frame.foilForceOrigins}
+        vectors={frame.foilForceVectors}
+        color={0x00ccff}
+        forceScale={0.005}
       />
     {/if}
   {/if}

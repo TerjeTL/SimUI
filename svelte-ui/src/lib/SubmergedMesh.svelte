@@ -2,7 +2,7 @@
 <script lang="ts">
   import { T } from '@threlte/core'
   import { BufferGeometry, BufferAttribute, DoubleSide } from 'three'
-  import { LUT } from './colormap'
+  import { LUT } from './colormap.ts'
 
   let {
     vertices,
@@ -10,7 +10,6 @@
     facePressure,
     pmin,
     pmax,
-    wireframe   = false,
     color       = 0x888888,
     opacity     = 1.0,
     polygonOffset       = false,
@@ -22,7 +21,6 @@
     facePressure?: Float32Array
     pmin?:         number
     pmax?:         number
-    wireframe?:    boolean
     color?:        number
     opacity?:      number
     polygonOffset?:       boolean
@@ -35,7 +33,7 @@
     g.setAttribute('position', new BufferAttribute(vertices, 3))
     g.setIndex(new BufferAttribute(indices, 1))
 
-    if (!wireframe && facePressure && facePressure.length > 0) {
+    if (facePressure && facePressure.length > 0) {
       const faceCount = facePressure.length
       const mn    = pmin ?? 0
       const range = (pmax ?? mn) - mn || 1
@@ -62,16 +60,7 @@
   })
 </script>
 
-{#if wireframe}
-  <T.Mesh geometry={geo}>
-    <T.MeshBasicMaterial
-      {color}
-      wireframe
-      transparent={opacity < 1}
-      {opacity}
-    />
-  </T.Mesh>
-{:else if facePressure && facePressure.length > 0}
+{#if facePressure && facePressure.length > 0}
   <T.Mesh geometry={geo}>
     <T.MeshLambertMaterial
       vertexColors
